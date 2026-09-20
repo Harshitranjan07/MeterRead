@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 
 // Database initialization
@@ -69,8 +70,8 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// Root & Health Endpoints
-app.get(['/', '/api'], (req, res) => {
+// API Directory & Discovery Endpoint
+app.get('/api', (req, res) => {
   res.json({
     status: 'online',
     system: 'Smart Utility Meter Reading & Billing Platform API',
@@ -169,21 +170,22 @@ app.use((err, req, res, next) => {
 });
 
 // Serve client in production build if present
-const clientDist = path.join(__dirname, '../client/dist');
-app.use(express.static(clientDist));
+const publicDir = fs.existsSync(path.join(__dirname, 'public'))
+  ? path.join(__dirname, 'public')
+  : path.join(__dirname, '../client/dist');
 
-// Fallback for SPA routing
+app.use(express.static(publicDir));
+
+// Fallback for SPA routing (serve index.html for UI pages)
 app.use((req, res) => {
   if (!req.path.startsWith('/api')) {
-    const indexPath = path.join(clientDist, 'index.html');
-    res.sendFile(indexPath, err => {
-      if (err) {
-        res.status(200).send('Smart Utility System API is running. Frontend dev server is active at port 5173.');
-      }
-    });
-  } else {
-    res.status(404).json({ success: false, message: 'API route not found' });
+    const indexPath = path.join(publicDir, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+    return res.status(200).send('Smart Utility System API is running. Frontend dev server is active at port 5173.');
   }
+  res.status(404).json({ success: false, message: 'API route not found' });
 });
 
 // Start Server if executed directly
