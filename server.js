@@ -46,13 +46,17 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// URL prefix normalization for serverless environments (Netlify / Vercel)
-app.use((req, res, next) => {
-  if (!req.url.startsWith('/api') && !req.url.startsWith('/assets') && !req.url.includes('.')) {
-    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
-  }
-  next();
-});
+const isServerless = Boolean(process.env.VERCEL || process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+// URL prefix normalization for serverless environments (Netlify / Vercel only)
+if (isServerless) {
+  app.use((req, res, next) => {
+    if (!req.url.startsWith('/api') && !req.url.startsWith('/assets') && !req.url.includes('.')) {
+      req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+    }
+    next();
+  });
+}
 
 // Basic Rate Limiting
 const apiLimiter = rateLimit({
@@ -64,6 +68,28 @@ const apiLimiter = rateLimit({
   message: { success: false, message: 'Too many requests from this IP, please try again later.' }
 });
 app.use('/api/', apiLimiter);
+
+// Root & Health Endpoints
+app.get(['/', '/api'], (req, res) => {
+  res.json({
+    status: 'online',
+    system: 'Smart Utility Meter Reading & Billing Platform API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/health',
+      dbStatus: '/api/system/db-status',
+      auth: '/api/auth/login',
+      consumers: '/api/consumers',
+      meters: '/api/meters',
+      readings: '/api/readings',
+      bills: '/api/bills',
+      payments: '/api/payments',
+      tariffs: '/api/tariffs/slabs',
+      dashboard: '/api/dashboard/stats'
+    }
+  });
+});
 
 // Health Check & System Status
 app.get('/api/health', (req, res) => {
