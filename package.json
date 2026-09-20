@@ -2,6 +2,8 @@
   "name": "smart-utility-meter-billing-server",
   "version": "1.0.0",
   "description": "Smart Utility Meter Reading & Billing System API Backend",
+  "license": "ISC",
+  "private": true,
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -33,7 +33,24 @@ const db = new Database(dbPath, {
 // Performance and Integrity pragmas
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
-db.pragma('synchronous = NORMAL');
+// Export DB interface immediately before schema init and seeding to eliminate circular dependency
+const dbInterface = {
+  db,
+  query: (sql, params = []) => {
+    return db.prepare(sql).all(params);
+  },
+  get: (sql, params = []) => {
+    return db.prepare(sql).get(params);
+  },
+  run: (sql, params = []) => {
+    return db.prepare(sql).run(params);
+  },
+  transaction: (fn) => {
+    return db.transaction(fn);
+  }
+};
+
+module.exports = dbInterface;
 
 const SCHEMA_SQL = require('../database/schemaSql');
 
@@ -67,19 +84,3 @@ function initSchema() {
 }
 
 initSchema();
-
-module.exports = {
-  db,
-  query: (sql, params = []) => {
-    return db.prepare(sql).all(params);
-  },
-  get: (sql, params = []) => {
-    return db.prepare(sql).get(params);
-  },
-  run: (sql, params = []) => {
-    return db.prepare(sql).run(params);
-  },
-  transaction: (fn) => {
-    return db.transaction(fn);
-  }
-};
