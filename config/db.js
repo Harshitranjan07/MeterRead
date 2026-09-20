@@ -3,9 +3,19 @@ const fs = require('fs');
 const path = require('path');
 
 const isServerless = Boolean(process.env.VERCEL || process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
-const defaultDataDir = isServerless 
-  ? '/tmp/data' 
-  : path.join(__dirname, '../../data');
+
+function resolveDataDir() {
+  if (process.env.DATA_DIR) return path.resolve(process.env.DATA_DIR);
+  if (isServerless) return '/tmp/data';
+  
+  const parentData = path.join(__dirname, '../../data');
+  const localData = path.join(__dirname, '../data');
+  
+  if (fs.existsSync(parentData)) return parentData;
+  return localData;
+}
+
+const defaultDataDir = resolveDataDir();
 
 const dbPath = process.env.DB_PATH 
   ? path.resolve(process.env.DB_PATH) 
