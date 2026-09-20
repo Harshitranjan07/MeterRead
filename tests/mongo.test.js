@@ -1,3 +1,4 @@
+require('dotenv').config();
 const assert = require('assert');
 const { connectMongoDB, disconnectMongoDB, getMongoStatus, isMongoConnected } = require('../config/mongodb');
 const {
